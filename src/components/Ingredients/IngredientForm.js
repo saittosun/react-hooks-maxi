@@ -11,7 +11,12 @@ const IngredientForm = React.memo(props => {
   // We can use a feature called array destructuring. It allows you to pull elements out of an array and stored them in separate variables.
   // So by adding them on the left side you're not using them to create a new array or anything like that. That would be the case if you use them on the right side. But instead this now is a javascript syntax that allows you to pull elements out of that array and stored them in variables and you add as many variables here variable names of your choice here between the square brackets on the left side as you have elements the array.
   // The first element will be our data. And the second will be a function to update that data. Typically you name this set input state or asset whatever you named your data because your well setting this to a new value you're not merging it. You're not updating it. You're overwriting it. So you're setting some new data.
-  const [inputState, setInputState] = useState({title: '', amount: ''});
+  // const [inputState, setInputState] = useState({title: '', amount: ''});
+  // in class based components in class based components state had to be an object and react merged it for you automatically and functional components with the useState. State doesn't have to be an object and really doesn't merge it for you but what you can do is you can register multiple states.
+  // So now I don't have to manually merge anything because these are managed independently
+  const [enteredTitle, setEnteredTitle] = useState('');
+  const [enteredAmount, setEnteredAmount] = useState('');
+
   const submitHandler = event => {
     event.preventDefault();
     // ...
@@ -26,13 +31,9 @@ const IngredientForm = React.memo(props => {
             <input 
               type="text" 
               id="title" 
-              value={inputState.title}
+              value={enteredTitle}
               onChange={event => {
-                const newTitle = event.target.value
-                setInputState((prevInputState) => ({
-                title: newTitle, 
-                amount: prevInputState.amount
-              }))
+                setEnteredTitle(event.target.value)
             }}/>
           </div>
           <div className="form-control">
@@ -40,14 +41,9 @@ const IngredientForm = React.memo(props => {
             <input 
               type="number" 
               id="amount" 
-              value={inputState.amount}
+              value={enteredAmount}
               onChange={event => {
-                // simply because we're using a closure here and we want to make sure that we're generating a new amount for every keystroke. And then this will automatically be considered by this inner function instead of reusing that same event object all the time.
-                const newAmount = event.target.value
-                setInputState((prevInputState) => ({
-                amount: newAmount,
-                title: prevInputState.title
-                }))
+                setEnteredAmount(event.target.value)
               }}/>
           </div>
           <div className="ingredient-form__actions">
