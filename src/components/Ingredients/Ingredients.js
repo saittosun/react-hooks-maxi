@@ -28,6 +28,12 @@ const Ingredients = () => {
       // used like this (with [] as a second argument), useEffect() acts like componentDidMount: it runs ONLY ONCE (after the first render)
   }, []);
 
+  // I'm not specifying a second argument and therefore this will run for every well rerun or a cycle here.
+  // If we add second argument, this means that this function here will now only run when user ingredients changed
+  useEffect(() => {
+    console.log('rendering ingredients', userIngredients)
+  }, [userIngredients]);
+
   const removeIngredientHandler = (ingredientId) => {
     setUserIngredients(prevIngredients => {
       return prevIngredients.filter((ingredient) => {
@@ -35,6 +41,10 @@ const Ingredients = () => {
       });
     });
   };
+
+  const filteredIngredientsHandler = (filteredIngredients) => {
+    setUserIngredients(filteredIngredients);
+  }
 
   const addIngredientHandler = (ingredient) => {
     // this is where we want to send our data to and you got to know what have fetched by default will send a get request a firebase once a post request though if we want to store data hence we pass a second argument to fetch and that's an object that allows us to configure this request in on this object we can set the method property to post default the set then you never need to set that but we want to set this to post you then also can add a body property to define what you want to send and that has to be json data which means you can use json which is another thing built into the browser it's a class in the end built in to browsers which has a stringify method. This will take a javascript object or array and convert it into valid json format
@@ -61,7 +71,8 @@ const Ingredients = () => {
     <div className="App">
       <IngredientForm onAddIngredient={addIngredientHandler}/>
       <section>
-        <Search />
+        {/* we have to specify this prop onLoadIngredients on a search component and there forward a point or add a function that should execute when all load ingredients is called in the search component. */}
+        <Search onLoadIngredients={filteredIngredientsHandler}/>
         <IngredientList 
           ingredients={userIngredients}
           onRemoveItem={removeIngredientHandler} />
