@@ -7,7 +7,7 @@ import IngredientList from './IngredientList';
 
 const Ingredients = () => {
   const [userIngredients, setUserIngredients] = useState([]);
-  
+
   // I'm not specifying a second argument and therefore this will run for every well rerun or a cycle here.
   // If we add second argument, this means that this function here will now only run when user ingredients changed
   useEffect(() => {
@@ -15,11 +15,17 @@ const Ingredients = () => {
   }, [userIngredients]);
 
   const removeIngredientHandler = (ingredientId) => {
-    setUserIngredients(prevIngredients => {
-      return prevIngredients.filter((ingredient) => {
-        return ingredient.id !== ingredientId;
+    fetch(
+      `https://react-hooks-a1e9b.firebaseio.com/ingredients/${ingredientId}.json`, 
+      {method: 'DELETE'}
+    ).then(response => {      
+      setUserIngredients(prevIngredients => {
+        return prevIngredients.filter((ingredient) => {
+          return ingredient.id !== ingredientId;
+        });
       });
-    });
+    }      
+    )
   };
 
   // this will now never rerun and therefore what React does is it cashes your function for you so that it survives rerun or cycles and therefore when ingredients component re renders this specific function (useCallback()) is not re created so it will not change. So what we pass to the search component to onLoadIngredients will be the old function the same function as on the previous render cycle and therefore in the search component on the use effect here on this check onLoadIngredients will not have changed and therefore it is a fact will not rerun.
