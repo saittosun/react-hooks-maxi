@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import Card from '../UI/Card';
 import './IngredientForm.css';
+import LoadingIndicator from '../UI/LoadingIndicator';
 
 // I'm also using react memo here to wrap this component to a wide unnecessary renders so that this only read renders this component only really renders when the props it depends on changed and not always when the parent component changed. So not always when ingredients changed but only when ingredients changed and we're passing you props to ingredient form which right now we're never doing so right now ingredient form won't re render when ingredients we renders.
 const IngredientForm = React.memo(props => {
@@ -48,6 +49,7 @@ const IngredientForm = React.memo(props => {
           </div>
           <div className="ingredient-form__actions">
             <button type="submit">Add Ingredient</button>
+            {props.loading && <LoadingIndicator/>}
           </div>
         </form>
       </Card>
