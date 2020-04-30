@@ -1,13 +1,36 @@
 // jshint esversion: 9
-import React, { useState, useEffect, useCallback } from 'react';
-
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import IngredientForm from './IngredientForm';
 import Search from './Search';
 import IngredientList from './IngredientList';
 import ErrorModal from '../UI/ErrorModal';
 
+// if you followed through the redux section the word reducer already tells you something with users are functions that take some input and returns and output in the end and useReducer uses that to give you a clearly defined way of the finding state changes in state updates and it will then also manage that state for you. So react will do that.
+// whilst the concept of reducer functions is similar, useReducer() has absolutely NO connection to the redux library.
+// It all starts with you to finding a reducer and you typically do that outside of your component so that this reduce or function isn't recreated when every component we render is because the reducer function often is decoupled from what's happening inside your component actually.
+const ingredientReducer = (currentIngredients, action) => {
+  // ingredients currently stored by react and an action that actually will become important for updating the state.
+  switch (action.type) {
+    case 'SET':
+      // I expect to get an ingredients property which should be an array of ingredients which will replace the old state.
+      return action.ingredients;
+    // in the add case here we all do want to return a new state snapshot 
+    case 'ADD':
+      // I expect to get an ingredients property which should be an array of ingredients which will replace the old state.
+      return [...currentIngredients, action.ingredient];
+    //  in the delete case here. We need to return our updated list of ingredients.
+    case 'DELETE':
+      return currentIngredients.filter(ing => ing.id !== action.id);
+    default:
+      throw new Error('should not get there');
+  }
+}
+
+
 const Ingredients = () => {
-  const [userIngredients, setUserIngredients] = useState([]);
+  // We now need to initialize it by calling use reduce or use it utilize it by calling useReducer. userReducer takes our reducer function. So the ingredient reducer in this case here and userReducer also takes an optional second argument which is the starting state and in our case that's an empty array. So that's what will be passed in as current ingredients. The first time does reducer runs and for subsequent runs current ingredients will be our current state.Initially it's an empty array and use reducer like used state returns something. Something although it is an array but now not with state and set state but with state. So our user ingredients. So we can comment out this use a state called here user ingredients. But the second argument is now not a method to set our user ingredients. Instead we're doing the setting in our reducer. Instead it's a dispatch function. It's still a function which we can call and you can name does whatever you want the named dispatch is just one that makes sense because it's a function which will call to dispatch these actions later.So where you dispatched these action objects which are then handled by the reducer so I'll temporarily again still import use state so that the arrow code still works.
+  const [userIngredients, dispatch] = useReducer(ingredientReducer, [])
+  // const [userIngredients, setUserIngredients] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState();
 
@@ -24,11 +47,12 @@ const Ingredients = () => {
       {method: 'DELETE'}
     ).then(response => {
     setIsLoading(false);
-      setUserIngredients(prevIngredients => {
-        return prevIngredients.filter((ingredient) => {
-          return ingredient.id !== ingredientId;
-        });
-      });
+      // setUserIngredients(prevIngredients => {
+      //   return prevIngredients.filter((ingredient) => {
+      //     return ingredient.id !== ingredientId;
+      //   });
+      // });
+      dispatch({type: 'DELETE', id: ingredientId});
     }      
     ).catch(err => {
       //  these two again will be batched together so it's not to render cycles that are executed to show the error modal and to remove the spinner but it's one of the same render cycle which already has both state updates taken into account. So that's how react Bachus state updates and how you can handle error with a separate state of course where you store errors and then react to them appropriately.
@@ -40,7 +64,10 @@ const Ingredients = () => {
 
   // this will now never rerun and therefore what React does is it cashes your function for you so that it survives rerun or cycles and therefore when ingredients component re renders this specific function (useCallback()) is not re created so it will not change. So what we pass to the search component to onLoadIngredients will be the old function the same function as on the previous render cycle and therefore in the search component on the use effect here on this check onLoadIngredients will not have changed and therefore it is a fact will not rerun.
   const filteredIngredientsHandler = useCallback((filteredIngredients) => {
-    setUserIngredients(filteredIngredients);
+    // setUserIngredients(filteredIngredients);
+    // we can't use yukaridaki kodu anymore we're not managing user ingredients with you state instead here we now dispatch for a setting the ingredients.
+    //  with that we're using dispatch to update our user ingredients.
+    dispatch({type: 'SET', ingredients: filteredIngredients})
   }, []);
 
   const addIngredientHandler = (ingredient) => {
@@ -56,14 +83,15 @@ const Ingredients = () => {
       return response.json();
     }).then(responseData => {
       // I get responseData or body in this function here which I passed the second then block which executes once this body has been parsed and now response data will be an object which has a name property which contains does automatically generated id, that's just how firebase works.
-      setUserIngredients(prevIngredients => [
+      //setUserIngredients(prevIngredients => [
         //  here the idea will be to call set user ingredients and now important we'll need to update the existing list of ingredients and add a new one. Now that means we depend on the current state and they offer it's best if we use the functional forum where we're guaranteed to get the latest state. So we get our previous ingredients here our older array basically the current state. This is a spread operator taking all elements of our old array and adding them as elements to this new Array which I'm constructing with the square brackets. And then to add one new element here and that's the ingredient we're getting now important ingredient we're getting from the ingredient form we'll have a title and an amount.
-        ...prevIngredients, 
+       // ...prevIngredients, 
         // we can access code name here has nothing to do with react or with the fetch API that's just firebase it returns some data which the end is a javascript object which has a name property and that name property will have that unique I.D. which was generated by firebase.
-        {id: responseData.name,
+       // {id: responseData.name,
           // we can again use to spread operator on ingredient now. So on this argument we're getting because this argument will be an object let's say the spread operator then takes all key value pairs from that object and adds key and value pairs to this new object. So now we're adding a new object with an I.D. title in amount to our list of ingredients here.
-          ...ingredient}
-      ]);
+      //    ...ingredient}
+     // ]);
+     dispatch({type: 'ADD', ingredient: {id: responseData.name, ...ingredient}});
     })
   };
 
