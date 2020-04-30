@@ -1,6 +1,6 @@
 // jshint esversion: 9
 // Now we can also get rid of that useState import here in the ingredients.js file because now we're managing all our state with use reducer which is an alternative to use state. If you got more complex state state that relies on the old state or if multiple state values work together and you want to well manage them in one place and update them correctly.
-import React, { useEffect, useCallback, useReducer } from 'react';
+import React, { useEffect, useCallback, useReducer, useMemo } from 'react';
 import IngredientForm from './IngredientForm';
 import Search from './Search';
 import IngredientList from './IngredientList';
@@ -60,7 +60,7 @@ const Ingredients = () => {
     console.log('rendering ingredients', userIngredients);
   }, [userIngredients]);
 
-  const removeIngredientHandler = (ingredientId) => {
+  const removeIngredientHandler = useCallback((ingredientId) => {
     // setIsLoading(true);
     dispatchHttp({type: 'SEND'});
     fetch(
@@ -83,7 +83,7 @@ const Ingredients = () => {
       // setIsLoading(false);
       dispatchHttp({type: 'ERROR', errorMessage: err.message});
     });
-  };
+  }, []);
 
   // this will now never rerun and therefore what React does is it cashes your function for you so that it survives rerun or cycles and therefore when ingredients component re renders this specific function (useCallback()) is not re created so it will not change. So what we pass to the search component to onLoadIngredients will be the old function the same function as on the previous render cycle and therefore in the search component on the use effect here on this check onLoadIngredients will not have changed and therefore it is a fact will not rerun.
   const filteredIngredientsHandler = useCallback((filteredIngredients) => {
@@ -93,7 +93,7 @@ const Ingredients = () => {
     dispatch({type: 'SET', ingredients: filteredIngredients})
   }, []);
 
-  const addIngredientHandler = (ingredient) => {
+  const addIngredientHandler = useCallback((ingredient) => {
     // setIsLoading(true);
     dispatchHttp({type: 'SEND'});
     // this is where we want to send our data to and you got to know what have fetched by default will send a get request a firebase once a post request though if we want to store data hence we pass a second argument to fetch and that's an object that allows us to configure this request in on this object we can set the method property to post default the set then you never need to set that but we want to set this to post you then also can add a body property to define what you want to send and that has to be json data which means you can use json which is another thing built into the browser it's a class in the end built in to browsers which has a stringify method. This will take a javascript object or array and convert it into valid json format
@@ -118,12 +118,23 @@ const Ingredients = () => {
      // ]);
      dispatch({type: 'ADD', ingredient: {id: responseData.name, ...ingredient}});
     })
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     // setError(null);
     dispatchHttp({type: 'CLEAR'});
-  };
+  }, []);
+
+  // use callback was a hook to save a function that doesn't change so that no new function is generated. Use memo is a hook where you can save a value which is saved so that the value isn't re created and that is a no way of memorizing component.
+  // So if you have some operation that calculates a more complex value calculates a value which maybe takes a bit longer to calculate than you want to consider wrapping it with the use memo so that it's not recalculated whenever the component renders but really only recalculated when you'd need to recalculate it. That's the idea here.
+  const ingredientList = useMemo(() => {
+    return (
+      <IngredientList 
+        ingredients={userIngredients}
+        onRemoveItem={removeIngredientHandler} />
+    )
+    // This tells react when it should rerun this function to create a new object that it should memorize
+  }, [userIngredients, removeIngredientHandler]);
 
   return (
     <div className="App">
@@ -134,9 +145,7 @@ const Ingredients = () => {
       <section>
         {/* we have to specify this prop onLoadIngredients on a search component and there forward a point or add a function that should execute when all load ingredients is called in the search component. */}
         <Search onLoadIngredients={filteredIngredientsHandler}/>
-        <IngredientList 
-          ingredients={userIngredients}
-          onRemoveItem={removeIngredientHandler} />
+        {ingredientList}
       </section>
     </div>
   );
