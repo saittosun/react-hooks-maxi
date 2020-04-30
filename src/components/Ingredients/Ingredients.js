@@ -1,5 +1,6 @@
 // jshint esversion: 9
-import React, { useState, useEffect, useCallback, useReducer } from 'react';
+// Now we can also get rid of that useState import here in the ingredients.js file because now we're managing all our state with use reducer which is an alternative to use state. If you got more complex state state that relies on the old state or if multiple state values work together and you want to well manage them in one place and update them correctly.
+import React, { useEffect, useCallback, useReducer } from 'react';
 import IngredientForm from './IngredientForm';
 import Search from './Search';
 import IngredientList from './IngredientList';
@@ -24,15 +25,34 @@ const ingredientReducer = (currentIngredients, action) => {
     default:
       throw new Error('should not get there');
   }
-}
+};
+
+// bu reducer i asagidaki Ingredients function'in icinde de yazabilirdik props kullanacak isek ancak avoid unnecessary recreations of the reducer we create outside.
+const httpReducer = (currentHttpState, action) => {
+  switch (action.type) {
+    case 'SEND':
+      // Now it's important to understand that here will not send the request itself. We're doing dat down there. Here I just want to manage to state that is related to that request being sent that influences are UI so the state there is basically where we show a loading spinner or whether we show an error.
+      return {loading: true, error: null};
+    case 'RESPONSE':
+      return {...currentHttpState, loading: false};
+    case 'ERROR':
+      return {loading: false, error: action.errorMessage};
+    case 'CLEAR':
+      return {...currentHttpState, error: null};
+    default:
+      throw new Error('should not be reached!');
+  }
+};
 
 
 const Ingredients = () => {
   // We now need to initialize it by calling use reduce or use it utilize it by calling useReducer. userReducer takes our reducer function. So the ingredient reducer in this case here and userReducer also takes an optional second argument which is the starting state and in our case that's an empty array. So that's what will be passed in as current ingredients. The first time does reducer runs and for subsequent runs current ingredients will be our current state.Initially it's an empty array and use reducer like used state returns something. Something although it is an array but now not with state and set state but with state. So our user ingredients. So we can comment out this use a state called here user ingredients. But the second argument is now not a method to set our user ingredients. Instead we're doing the setting in our reducer. Instead it's a dispatch function. It's still a function which we can call and you can name does whatever you want the named dispatch is just one that makes sense because it's a function which will call to dispatch these actions later.So where you dispatched these action objects which are then handled by the reducer so I'll temporarily again still import use state so that the arrow code still works.
-  const [userIngredients, dispatch] = useReducer(ingredientReducer, [])
+  const [userIngredients, dispatch] = useReducer(ingredientReducer, []);
+  // Here I'm using an object because I want to have multiple connected fields and therefore I have an object to connect them.
+  const [httpState, dispatchHttp] = useReducer(httpReducer, {loading: false, error: null});
   // const [userIngredients, setUserIngredients] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState();
+  // const [isLoading, setIsLoading] = useState(false);
+  // const [error, setError] = useState();
 
   // I'm not specifying a second argument and therefore this will run for every well rerun or a cycle here.
   // If we add second argument, this means that this function here will now only run when user ingredients changed
@@ -41,12 +61,14 @@ const Ingredients = () => {
   }, [userIngredients]);
 
   const removeIngredientHandler = (ingredientId) => {
-    setIsLoading(true);
+    // setIsLoading(true);
+    dispatchHttp({type: 'SEND'});
     fetch(
       `https://react-hooks-a1e9b.firebaseio.com/ingredients/${ingredientId}.json`, 
       {method: 'DELETE'}
     ).then(response => {
-    setIsLoading(false);
+    // setIsLoading(false);
+      dispatchHttp({type: 'RESPONSE'});
       // setUserIngredients(prevIngredients => {
       //   return prevIngredients.filter((ingredient) => {
       //     return ingredient.id !== ingredientId;
@@ -57,8 +79,9 @@ const Ingredients = () => {
     ).catch(err => {
       //  these two again will be batched together so it's not to render cycles that are executed to show the error modal and to remove the spinner but it's one of the same render cycle which already has both state updates taken into account. So that's how react Bachus state updates and how you can handle error with a separate state of course where you store errors and then react to them appropriately.
       //every error object by default has a message properties.
-      setError(err.message);
-      setIsLoading(false);
+      // setError(err.message);
+      // setIsLoading(false);
+      dispatchHttp({type: 'ERROR', errorMessage: err.message});
     });
   };
 
@@ -71,14 +94,16 @@ const Ingredients = () => {
   }, []);
 
   const addIngredientHandler = (ingredient) => {
-    setIsLoading(true);
+    // setIsLoading(true);
+    dispatchHttp({type: 'SEND'});
     // this is where we want to send our data to and you got to know what have fetched by default will send a get request a firebase once a post request though if we want to store data hence we pass a second argument to fetch and that's an object that allows us to configure this request in on this object we can set the method property to post default the set then you never need to set that but we want to set this to post you then also can add a body property to define what you want to send and that has to be json data which means you can use json which is another thing built into the browser it's a class in the end built in to browsers which has a stringify method. This will take a javascript object or array and convert it into valid json format
     fetch('https://react-hooks-a1e9b.firebaseio.com/ingredients.json', {
       method: 'POST',
       body: JSON.stringify(ingredient),
       headers: {'Content-Type': 'application/json'}
     }).then(response => {
-      setIsLoading(false);
+      // setIsLoading(false);
+      dispatchHttp({type: 'RESPONSE'});
       // this response actually will get some data back from firebase which contains that automatically generated id response itself however is a more complex object we're interested in the body of that responds and you get that by calling the Jason method there. This will extract the body and convert it from Jason to normal javascript code however this also returns a promise so we'll actually return response Jason here. and move this code into a neighbor then block which a change here which will be my my body
       return response.json();
     }).then(responseData => {
@@ -96,15 +121,16 @@ const Ingredients = () => {
   };
 
   const clearError = () => {
-    setError(null);
+    // setError(null);
+    dispatchHttp({type: 'CLEAR'});
   };
 
   return (
     <div className="App">
-      {error && <ErrorModal onClose={clearError}>{error}</ErrorModal>}
+      {httpState.error && <ErrorModal onClose={clearError}>{httpState.error}</ErrorModal>}
       <IngredientForm 
         onAddIngredient={addIngredientHandler}
-        loading={isLoading}/>
+        loading={httpState.loading}/>
       <section>
         {/* we have to specify this prop onLoadIngredients on a search component and there forward a point or add a function that should execute when all load ingredients is called in the search component. */}
         <Search onLoadIngredients={filteredIngredientsHandler}/>
